@@ -1,0 +1,113 @@
+Atb hub is gving a scholarship to learn how to code. create server side of a website where 
+prospective students can show their interest in learning any of the courses. The parameter
+ to take (firstname, lastnamr, email, course they are interested in, reasons they should be selected).
+Then create an admin signature loginand fetch all user details from the database using pagination (5)
+ then seed in 10 users
+
+
+
+To solve this assignment using Node.js, Express.js, and Mongoose, you'll need to follow these steps:
+
+Set up a Node.js project with Express.js and Mongoose.
+Create a schema for the student model.
+Create routes for handling student submissions and admin login.
+Implement pagination for fetching student details.
+Seed the database with initial data.
+Here's a basic implementation:
+
+Set up your project:
+
+
+const express = require('express');
+const mongoose = require('mongoose');
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.use(express.json());
+
+// Connect to MongoDB
+mongoose.connect('mongodb://localhost/scholarshipDB', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
+
+// Define student schema and model
+const studentSchema = new mongoose.Schema({
+  firstName: String,
+  lastName: String,
+  email: String,
+  course: String,
+  reason: String,
+});
+
+const Student = mongoose.model('Student', studentSchema);
+
+// Routes
+app.post('/submit', async (req, res) => {
+  try {
+    const student = new Student(req.body);
+    await student.save();
+    res.status(201).send('Student submitted successfully!');
+  } catch (error) {
+    res.status(500).send(error.message);
+  }
+});
+
+// Admin login
+// Implement admin login here
+
+// Fetch all users with pagination
+app.get('/users', async (req, res) => {
+  try {
+    const page = req.query.page || 1;
+    const limit = 5;
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+
+    const results = {};
+    if (endIndex < (await Student.countDocuments().exec())) {
+      results.next = {
+        page: page + 1,
+        limit: limit,
+      };
+    }
+
+    if (startIndex > 0) {
+      results.previous = {
+        page: page - 1,
+        limit: limit,
+      };
+    }
+
+    results.results = await Student.find().limit(limit).skip(startIndex).exec();
+    res.send(results);
+  } catch (error) {
+    res.status(500).send(error.message);
+  }
+});
+
+// Seed initial data
+async function seedData() {
+  try {
+    for (let i = 0; i < 10; i++) {
+      const student = new Student({
+        firstName: `Student${i}`,
+        lastName: `Lastname${i}`,
+        email: `student${i}@example.com`,
+        course: 'Web Development', // or any course
+        reason: 'I am interested in learning coding because...',
+      });
+      await student.save();
+    }
+    console.log('Data seeded successfully!');
+  } catch (error) {
+    console.error('Error seeding data:', error.message);
+  }
+}
+
+seedData();
+
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
